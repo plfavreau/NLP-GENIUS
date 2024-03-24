@@ -34,6 +34,8 @@ def import_data_n_gram(file_path: str):
     The transformation effectuated are:
     - Keep only the english songs and remove the language column
     - Remove the NaN values
+    - Keep only the songs with a title length inferior to 50 characters
+    - Keep only the songs with a title composed of ASCII characters
     - Concatenate the title and the lyrics in a single column
     - Transform the text in lowercase
     - Split the data in a training and validation set
@@ -43,6 +45,8 @@ def import_data_n_gram(file_path: str):
     data = data.loc[data['language_cld3'] == 'en']
     data = data.drop(columns=['language_cld3'])
     data = data.dropna()
+    data = data[data['title'].apply(lambda x: len(x) < 50)]
+    data = data[data['title'].str.match(r'^[\x00-\x7F]*$')]
     data['title_lyrics'] = data['title'] + ' ' + data['lyrics']
     data[['title_lyrics', 'title', 'lyrics']] = data[['title_lyrics', 'title', 'lyrics']].apply(lambda x: x.str.lower())
     train_set, validation_set = split_data(data)
@@ -54,6 +58,8 @@ def import_data_transformer(file_path: str):
     The transformation effectuated are:
     - Keep only the english songs and remove the language column
     - Remove the NaN values
+    - Keep only the songs with a title length inferior to 50 characters
+    - Keep only the songs with a title composed of ASCII characters
     - Concatenate the title and the lyrics in a single column
     - Transform the text in lowercase
     - Split the data in a training and validation set
@@ -63,6 +69,8 @@ def import_data_transformer(file_path: str):
     data = data.loc[data['language_cld3'] == 'en']
     data = data.drop(columns=['language_cld3'])
     data = data.dropna()
+    data = data[data['title'].apply(lambda x: len(x) < 50)]
+    data = data[data['title'].str.match(r'^[\x00-\x7F]*$')]
     data['title_lyrics'] = data['title'] + ' ' + data['lyrics']
     data[['title_lyrics', 'title', 'lyrics']] = data[['title_lyrics', 'title', 'lyrics']].apply(lambda x: x.str.lower())
     train_set, validation_set = split_data(data)
