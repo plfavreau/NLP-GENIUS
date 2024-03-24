@@ -1,5 +1,11 @@
 import pandas as pd
 
+"""
+Here we define the functions that will be used to preprocess the data for the different models.
+We use the song_lyrics.csv file as csv from the GENIUS dataset 
+(https://www.kaggle.com/datasets/carlosgdcj/genius-song-lyrics-with-language-information)
+"""
+
 def split_data(data: pd.DataFrame):
     """
     Split the data in a training and test set.
@@ -18,6 +24,7 @@ def import_data_classifier(file_path: str):
     - Keep only the english songs and remove the language column
     - Remove the NaN values
     - Transform the text in lowercase
+    - Replace the square brackets by an empty string to remove the annotations and metadata
     - Split the data in a training and validation set
     """
     data = pd.read_csv(file_path, usecols=['lyrics', 'tag', 'language_cld3'])
@@ -25,6 +32,7 @@ def import_data_classifier(file_path: str):
     data = data.drop(columns=['language_cld3'])
     data = data.dropna()
     data[['lyrics', 'tag']] = data[['lyrics', 'tag']].apply(lambda x: x.str.lower())
+    data['lyrics'] = data['lyrics'].str.replace(r"\[.*\]", "")
     train_set, validation_set = split_data(data)
     return train_set, validation_set
 
@@ -34,6 +42,7 @@ def import_data_n_gram(file_path: str):
     The transformation effectuated are:
     - Keep only the english songs and remove the language column
     - Remove the NaN values
+    - Replace the square brackets by an empty string to remove the annotations and metadata
     - Concatenate the title and the lyrics in a single column
     - Transform the text in lowercase
     - Split the data in a training and validation set
@@ -43,6 +52,7 @@ def import_data_n_gram(file_path: str):
     data = data.loc[data['language_cld3'] == 'en']
     data = data.drop(columns=['language_cld3'])
     data = data.dropna()
+    data['lyrics'] = data['lyrics'].str.replace(r"\[.*\]", "")
     data['title_lyrics'] = data['title'] + ' ' + data['lyrics']
     data[['title_lyrics', 'title', 'lyrics']] = data[['title_lyrics', 'title', 'lyrics']].apply(lambda x: x.str.lower())
     train_set, validation_set = split_data(data)
@@ -54,6 +64,7 @@ def import_data_transformer(file_path: str):
     The transformation effectuated are:
     - Keep only the english songs and remove the language column
     - Remove the NaN values
+    - Replace the square brackets by an empty string to remove the annotations and metadata
     - Concatenate the title and the lyrics in a single column
     - Transform the text in lowercase
     - Split the data in a training and validation set
@@ -63,6 +74,7 @@ def import_data_transformer(file_path: str):
     data = data.loc[data['language_cld3'] == 'en']
     data = data.drop(columns=['language_cld3'])
     data = data.dropna()
+    data['lyrics'] = data['lyrics'].str.replace(r"\[.*\]", "")
     data['title_lyrics'] = data['title'] + ' ' + data['lyrics']
     data[['title_lyrics', 'title', 'lyrics']] = data[['title_lyrics', 'title', 'lyrics']].apply(lambda x: x.str.lower())
     train_set, validation_set = split_data(data)
