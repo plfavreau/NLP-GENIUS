@@ -1,0 +1,90 @@
+1/
+solveur lbfgs 
+Données non " shufflisées "
+max_iter=5000 - Env 10 min
+count vectorizer n gram = 1 , 1
+Accuracy: 0.5412772585669782
+
+2/ 
+solveur lbfgs 
+Données " shufflisées "
+max_iter=3000 - Env 3 min
+count vectorizer n gram = 1 , 1
+Accuracy: 0.5404984423676013
+
+3/ 
+solveur lbfgs 
+Données " shufflisées "
+max_iter=3000 - Env 1 HEURE
+count vectorizer n gram = 1 , 2
+Accuracy: 0.594392523364486
+
+--------------------Solver sag------
+
+1/
+solveur sag 
+Données " shufflisées "
+max_iter=3000 - Trop de temps
+count vectorizer n gram = 1 , 1
+Accuracy: 
+
+2/ 
+solveur saga
+Données " shufflisées "
+max_iter=3000 - Env 12 min
+count vectorizer n gram = 1 , 1
+Accuracy: 0.5936137071651091
+
+Résultats bcp plus consistants, se trompe un peu mais ça reste ok c'est pas aussi abérant que le précédent
+
+3/ 
+solveur saga
+Penalty : L1
+Données " shufflisées "
+max_iter=3000 - Env > 42 min converge pas a fait exploser le collab
+count vectorizer n gram = 1 , 1
+Accuracy: 0.5936137071651091
+
+
+4/ 
+solveur saga
+Penalty : L2
+Données " shufflisées "
+max_iter = 1000 ! environ même pas 5 min
+count vectorizer n gram = 1 , 1
+/usr/local/lib/python3.10/dist-packages/sklearn/linear_model/_sag.py:350: ConvergenceWarning: The max_iter was reached which means the coef_ did not converge
+  warnings.warn(
+Accuracy: 0.6177570093457944
+23/03 best solver for the moment !
+
+
+max_iter = 3000 tjrs pas convergé et pris 14 min -> pk pas mettre à encore plus ...
+Accuracy: 0.6006230529595016
+
+
+5/ 
+solveur saga
+Penalty : elasticnet , l1-ratio = 0.5
+Données " shufflisées "
+max_iter=1000 - converge pas
+count vectorizer n gram = 1 , 1
+Accuracy: 0.
+
+
+
+
+6/ 
+solveur saga
+Penalty : L2
+Données " shufflisées "
+max_iter = Non spécifié converge pas ??! bizarre
+count vectorizer n gram = 1 , 1
+
+
+
+----------------------------Avec tokenizer-----------------------------------------
+
+
+model = make_pipeline(CountVectorizer(tokenizer=gpt_tokenize, ngram_range=(1, 1)), scaler, LogisticRegression( max_iter = 1000, solver='saga',penalty='l2'))
+
+Accuracy: 0.6216510903426792
