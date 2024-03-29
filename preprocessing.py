@@ -28,6 +28,9 @@ def import_data_classifier(file_path: str):
     - Split the data in a training and validation set
     """
     data = pd.read_csv(file_path, usecols=['lyrics', 'tag', 'language_cld3'])
+    # in case of lack of performance or quick tests, uncomment this following line :
+    # data = pd.read_csv(file_path, usecols=['lyrics', 'tag', 'language_cld3'], skiprows=lambda i: i % 1000 != 0)
+
     data = data.loc[data['language_cld3'] == 'en']
     data = data.drop(columns=['language_cld3'])
     data = data.dropna()
