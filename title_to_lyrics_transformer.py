@@ -46,17 +46,50 @@ def train(model, dataloader, optimizer, device, epoch):
         if (batch_idx + 1) % 10 == 0:
             print(f"Epoch [{epoch+1}], Batch [{batch_idx+1}/{len(dataloader)}], Loss: {loss.item():.4f}")
 
-def generate_lyrics(model, tokenizer, title, max_length, num_return_sequences):
+def generate_lyrics(model, tokenizer, title, max_length, num_variations):
     input_ids = tokenizer.encode(title, return_tensors='pt').to(model.device)
+    attention_mask = torch.ones(input_ids.shape, dtype=torch.long, device=model.device)
+    
     output = model.generate(
         input_ids, 
+        attention_mask=attention_mask,
         max_length=max_length,
-        num_return_sequences=num_return_sequences,
+        num_return_sequences=num_variations,
         no_repeat_ngram_size=2,
-        early_stopping=True
+        early_stopping=False,
+        num_beams=5,
+        do_sample=True,  # Enable sampling
+        top_k=50,  # Sample from top 50 tokens
+        top_p=0.95,  # Sample from top 95% probability mass
+        temperature=0.7  # Adjust temperature for sampling
     )
-    lyrics = tokenizer.decode(output[0], skip_special_tokens=True)
-    return lyrics
+    
+    generated_lyrics = []
+    for sequence in output:
+        generated_lyrics.append(tokenizer.decode(sequence, skip_special_tokens=True))
+    return generated_lyrics
+
+
+
+def calculate_perplexity(model, dataloader, device):
+    model.eval()
+    perplexity = 0
+    with torch.no_grad():
+        for batch in dataloader:
+            input_ids = batch['input_ids'].to(device)
+            attention_mask = batch['attention_mask'].to(device)
+            outputs = model(input_ids, attention_mask=attention_mask, labels=input_ids)
+            loss = outputs[0]
+            perplexity += torch.exp(loss).item()
+    perplexity /= len(dataloader)
+    return perplexity
+
+def post_process_lyrics(lyrics):
+    post_processed_lyrics = []
+    # split the lyrics by line, capitalize the first letter of each line
+    for line in lyrics:
+        post_processed_lyrics += [x if x in ['\n', ' '] else x.capitalize() for x in line.split('\n')]
+    return post_processed_lyrics
 
 def save_model(model, tokenizer, output_dir):
     model.save_pretrained(output_dir)
@@ -81,7 +114,8 @@ def tf_entry_point(isTraining, train_set, validation_set):
     
     # Create datasets and dataloaders
     train_dataset = LyricsDataset(train_set, tokenizer, max_length=768)
-    
+    validation_dataset = LyricsDataset(validation_set, tokenizer, max_length=768)
+    validation_dataloader = DataLoader(validation_dataset, batch_size=4)
     train_dataloader = DataLoader(train_dataset, batch_size=4, shuffle=True)
     
     # Set optimizer
@@ -92,22 +126,29 @@ def tf_entry_point(isTraining, train_set, validation_set):
         for epoch in range(epochs):
             print(f"Epoch {epoch+1}/{epochs}")
             train(model, train_dataloader, optimizer, device, epoch)
+            perplexity = calculate_perplexity(model, validation_dataloader, device)
+            print(f"Perplexity on validation set for epoch {epoch} : {perplexity:.2f}")
         
         # Save the trained model
         save_model(model, tokenizer, "trained_model")
     else:
         # Load the trained model
         model, tokenizer = load_model("trained_model", device)
-        
-        # Generate lyrics for a random title
-        random_title = random.choice(validation_set['title'].tolist())
-        print(f"Generating lyrics for the title: '{random_title}'")
-        generated_lyrics = generate_lyrics(model, tokenizer, random_title, max_length=500, num_return_sequences=1)
-        print("Generated Lyrics:")
-        print(generated_lyrics)
+
+    perplexity = calculate_perplexity(model, validation_dataloader, device)
+    print(f"Perplexity on validation set: {perplexity:.2f}")    
+    # random_title = random.choice(validation_set['title'].tolist())
+    random_title = "Me, Myself, And I"
+    generated_lyrics = generate_lyrics(model, tokenizer, random_title, max_length=10000, num_variations=1)
+    print(f"Generated Lyrics for the title '{random_title}':")
+    post_processed_lyrics = post_process_lyrics(generated_lyrics)
+    print(" --- Lyrics --- ")
+    print(str(len(generated_lyrics)) + " total lines")
+    for line in post_processed_lyrics:
+        print(line.capitalize())
         
 if __name__ == "__main__":
     file_path = "song_lyrics.csv"  
-    train_set, validation_set = import_data_transformer(file_path, 300)
+    train_set, validation_set = import_data_transformer(file_path, 100)
     isTraining = False
     tf_entry_point(isTraining, train_set, validation_set)
