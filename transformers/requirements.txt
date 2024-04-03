@@ -1,0 +1,8 @@
+nltk==3.8.1
+pandas==2.2.1
+scikit_learn==1.4.1.post1
+spacy==3.7.4
+tensorflow==2.16.1
+tiktoken==0.6.0
+transformers==4.39.2
+torch
