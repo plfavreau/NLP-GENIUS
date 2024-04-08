@@ -6,10 +6,11 @@
 #!pip install spacy
 #!pip install scipy
 
+
 import nltk 
-nltk.download('punkt')
+""" nltk.download('punkt')
 nltk.download('wordnet')
-import spacy
+ """
 import tiktoken
 
 from nltk.tokenize import word_tokenize
@@ -28,27 +29,32 @@ from sklearn.model_selection import  cross_val_score , GridSearchCV
 from sklearn.metrics import accuracy_score
 from sklearn.ensemble import VotingClassifier
 
-
-import warnings
-warnings.filterwarnings("ignore")
+# Tools imports
+import optuna
+import os
 
 # Custom imports
 from preprocessing import import_data_classifier
 
 
 """
-    The goal of this script is to train 
+    The goal of this script is to train classifier models to predict the song genre (tag) based on lyrics data.
+    To do so, we will train three different models:
     1 Logistic regression 
     2 Naive bayes 
     3 A mix of logistic and naive bayes 
-    classifier models to predict the song genre (tag) based on lyrics data.
+    
+    Then, we will evaluate the models using cross-validation and accuracy score.
+
+    Finally, we will use optuna to find best hyperparameters and check their impact on the perfomance.
 
     First functions are utility functions to tokenize the data and split the data.
 """
 def gpt_tokenize(doc):
     enc = tiktoken.encoding_for_model("gpt-4")
     tokens = enc.encode(doc)
-    return [str(token) for token in tokens]
+    # Normalize numerical tokens
+    return ["<NUMBER>" if str(token).isnumeric() else str(token) for token in tokens]
 
 
 def split_data(train_set, validation_set):
@@ -80,24 +86,24 @@ def evaluate_model(model, X_train, Y_train, X_validation, Y_validation, scoring 
 
 
 """         The following functions are the main functions to train the models.      """
-
+# Import the data, and split it in a training and validation set
+train_set, validation_set = import_data_classifier("song_lyrics.csv")
+X_train, Y_train, X_validation, Y_validation = split_data(train_set, validation_set)
 
 def logistic_regression_classifier(file_path: str):
     print("Logistic regression classifier")
     """
     Train a logistic regression classifier model.
     """
-    # Import the data
-    train_set, validation_set = import_data_classifier(file_path)
-
-    X_train, Y_train, X_validation, Y_validation = split_data(train_set, validation_set)
     # Train the model
-
-    # basic model
+    # This is a basic model :
     # model = make_pipeline(CountVectorizer(ngram_range = (1,1)), LogisticRegression())
 
-    # After multiples empiric tries, the best parameters are:
-    model = make_pipeline(CountVectorizer(tokenizer=gpt_tokenize, ngram_range=(1, 1),stop_words = list(en_stop)), StandardScaler(with_mean=False), LogisticRegression(max_iter=1000, solver='saga', penalty='l2'))
+    # After multiples empiric tries, the best parameters seems to be the following ones:
+    #model = make_pipeline(CountVectorizer(tokenizer=gpt_tokenize, ngram_range=(1, 1),stop_words = list(en_stop)), StandardScaler(with_mean=False), LogisticRegression(max_iter=1000, solver='saga', penalty='l2'))
+
+    # Using optuna results :
+    model = make_pipeline(CountVectorizer(tokenizer=gpt_tokenize, ngram_range=(1, 1), stop_words=list(en_stop),token_pattern=None), StandardScaler(with_mean=False), LogisticRegression(max_iter=2000, solver='saga', penalty='elasticnet', l1_ratio=0.8119063905463674, C= 0.10275855119285837))
     print("model is fitting...")
     model.fit(X_train, Y_train)
 
@@ -114,11 +120,6 @@ def naive_bayes_classifier(file_path :str):
     """
     Train a naive bayes classifier model.
     """
-     # Import the data
-    train_set, validation_set = import_data_classifier(file_path)
-
-    X_train, Y_train, X_validation, Y_validation = split_data(train_set, validation_set)
-
     # Train the model
 
     # basic model
@@ -151,10 +152,6 @@ def naive_bayes_classifier(file_path :str):
 
 
 def ensembling_classifier(file_path: str):
-    # Import the data
-    train_set, validation_set = import_data_classifier(file_path)
-    X_train, Y_train, X_validation, Y_validation = split_data(train_set, validation_set)
-
     # Define the models
     LOG_model = logistic_regression_classifier(file_path)
     NB_model = naive_bayes_classifier(file_path)
@@ -170,6 +167,68 @@ def ensembling_classifier(file_path: str):
     return voting_clf
 
 
+
+def objective_logistic(trial):
+    # Define the hyperparameters to be optimized
+    l1_ratio = trial.suggest_float('l1_ratio', 0.0, 1.0)
+    #C = trial.suggest_loguniform('C', 1e-4, 1e4) deprecated
+    C = trial.suggest_float('C', 1e-4, 1e4, log=True)
+
+    model = make_pipeline(
+        CountVectorizer(tokenizer=gpt_tokenize, ngram_range=(1, 1), stop_words=list(en_stop)),
+        StandardScaler(with_mean=False),
+        LogisticRegression(max_iter=1000, solver='saga', penalty='elasticnet', l1_ratio=l1_ratio, C=C)
+    )
+
+    model.fit(X_train, Y_train)
+    accuracy = model.score(X_validation, Y_validation)
+    return accuracy
+
+def find_best_hp_with_optuna(classifier_type:int):
+   # Database for the optuna dashboard
+    if classifier_type == 1 : # Logistic regression
+      storage_name = "optuna_logistic_regression.db"
+    else: # Naive bayes
+      storage_name = "optuna_naive_bayes.db"
+    if os.path.exists(storage_name):
+        os.remove(storage_name)
+
+    # Create a study
+    study = optuna.create_study(
+        storage=f"sqlite:///{storage_name}",
+        study_name=classifier_type,
+        load_if_exists=False,
+        direction="maximize",  # we want to maximize the score
+    )
+    if classifier_type == 1:
+        study.optimize(objective_logistic, n_trials=50)
+    else:
+        study.optimize(objective_naive_bayes, n_trials=50)
+
+    # print best trial
+    print(f"Best value: {study.best_value} (params: {study.best_params})")
+    for key, value in study.best_trial.params.items():
+        if type(value) == float:
+            print(f"{key}: {value:.2f}")
+        else:
+            print(f"{key}: {value}")
+
+
+
+def objective_naive_bayes(trial):
+    alpha = trial.suggest_float('alpha', 0.01, 10.0)
+
+    model = make_pipeline(
+        CountVectorizer(tokenizer=gpt_tokenize, ngram_range=(1, 2), stop_words=list(en_stop)),
+        MultinomialNB(alpha=alpha)
+    )
+
+    model.fit(X_train, Y_train)
+    accuracy = model.score(X_validation, Y_validation)
+    return accuracy
+
+
+find_best_hp_with_optuna(classifier_type=2)
 #logistic_regression_classifier("song_lyrics.csv")
 #naive_bayes_classifier("song_lyrics.csv")
 #ensembling_classifier("song_lyrics.csv")

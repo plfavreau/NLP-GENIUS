@@ -1,3 +1,6 @@
+optuna_logistic_regression.db
+optuna_naive_bayes.db
+
 # dataset
 song_lyrics.csv
 # Custom
