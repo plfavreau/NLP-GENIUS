@@ -71,7 +71,7 @@ def tokenize(word_dict, vocabulary):
 
 def byte_pair_encoding(k, lyrics):
     # Récupérer la liste de mots, leur fréquence et leur décomposition en tokens
-    word_count = get_word_count(test)
+    word_count = get_word_count(lyrics)
 
     # Récupérer le vocabulaire initial
     vocabulary = get_init_vocabulary(word_count)
