@@ -38,7 +38,7 @@ def tokenize(word_dict, vocabulary):
         count = value["count"]
         letters = value["letters"]
 
-        for i in range(len(letters) - 2):
+        for i in range(len(letters) - 1):
             pair = "".join(letters[i:i+2])
 
             if pair not in pairs.values():
@@ -83,5 +83,6 @@ def byte_pair_encoding(k, lyrics):
 
 
 # test = "[Verse 1: Cam'ron] Killa, Dipset Man I'll spit that pimp talk, you hang out where the pimp collide"
-# vocab = byte_pair_encoding(10, test)
-# print(vocab)
+# for k in range(1000):
+# vocab = byte_pair_encoding(43, test)
+# print(43, vocab)
