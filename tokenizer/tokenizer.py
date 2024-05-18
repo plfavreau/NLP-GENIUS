@@ -38,13 +38,17 @@ def tokenize(word_dict, vocabulary):
         count = value["count"]
         letters = value["letters"]
 
-        for i in range(len(letters) - 1):
-            pair = "".join(letters[i:i+2])
+        if len(letters) >= 2:
+            for i in range(len(letters) - 1):
+                pair = "".join(letters[i:i+2])
 
-            if pair not in pairs.values():
-                pairs[pair] = count
-            else:
-                pairs[pair] += count
+                if pair not in pairs.values():
+                    pairs[pair] = count
+                else:
+                    pairs[pair] += count
+
+    if len(pairs) == 0:
+        return
 
     # Get the most frequent pair
     best_pair = max(pairs, key=pairs.get)
@@ -67,6 +71,7 @@ def tokenize(word_dict, vocabulary):
             i += 1
 
         value["letters"] = new_letters
+    print(word_dict)
 
 
 def byte_pair_encoding(k, lyrics):
@@ -82,7 +87,7 @@ def byte_pair_encoding(k, lyrics):
     return vocabulary
 
 
-# test = "[Verse 1: Cam'ron] Killa, Dipset Man I'll spit that pimp talk, you hang out where the pimp collide"
+test = "[Verse 1: Cam'ron] Killa, Dipset Man I'll spit that pimp talk, you hang out where the pimp collide"
 # for k in range(1000):
-# vocab = byte_pair_encoding(43, test)
-# print(43, vocab)
+vocab = byte_pair_encoding(50, test)
+print(43, vocab)
