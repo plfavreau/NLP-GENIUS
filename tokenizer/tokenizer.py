@@ -76,18 +76,16 @@ def tokenize(word_dict, vocabulary):
     return True
 
 
-def byte_pair_encoding(k, lyrics):
+def byte_pair_encoding(lyrics):
     # Récupérer la liste de mots, leur fréquence et leur décomposition en tokens
     word_count = get_word_count(lyrics)
 
     # Récupérer le vocabulaire initial
     vocabulary = get_init_vocabulary(word_count)
+    has_enlarged_vocab = True
 
-    for i in range(k):
+    while has_enlarged_vocab:
         has_enlarged_vocab = tokenize(word_count, vocabulary)
-
-        if not has_enlarged_vocab:
-            break
 
     return vocabulary
 
