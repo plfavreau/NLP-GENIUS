@@ -38,7 +38,20 @@ def generate_lyrics(model, tokenizer, title, max_length, num_variations):
         generated_lyrics.append(tokenizer.decode(sequence, skip_special_tokens=True))
     return generated_lyrics
 
-
+def getPerplexityFromPretrained():
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model, tokenizer = load_model("transformers/trained_model", device)
+    VALIDATION_ROWS = 200000
+    _ , validation_set = import_data_transformer("dataset/song_lyrics.csv", VALIDATION_ROWS * 5) # validation set is 20% of the data
+    print(f"Validation set size: {len(validation_set)}")
+    # reset_index(drop=True) is used to reset the index of the DataFrame
+    validation_set = validation_set.reset_index(drop=True)
+    validation_dataset = LyricsDataset(validation_set, tokenizer, max_length=768)
+    print(f"Validation dataset size: {len(validation_dataset)}")
+    validation_dataloader = DataLoader(validation_dataset, batch_size=4)
+    print(f"Validation dataloader size: {len(validation_dataloader)}")
+    perplexity = calculate_perplexity(model, validation_dataloader, device)
+    return f"Perplexity on validation set: {perplexity:.2f}"
 
 def calculate_perplexity(model, dataloader, device):
     model.eval()
@@ -114,6 +127,10 @@ def prettyPrintLyrics(lyrics):
     
         
 if __name__ == "__main__":
+    # count the words sum of all the columns in the first 1 million rows :
+    # cat song_lyrics.csv | head -n 1000000 | awk -F ',' '{print $1}' | wc -w
+
+    exit()
     isTraining = os.environ.get('TSF_TRAINING', 'False').lower() == 'true'
     title = os.environ.get('TSF_TITLE', 'Life is about raining.')
     rows = os.environ.get('TSF_ROWS', '100')
@@ -130,8 +147,9 @@ if __name__ == "__main__":
     if isTraining:
         tf_entry_point(isTraining, file_path, rows, device)
     else:
-        lyrics = generate_lyrics_from_title(title, device, max_length=1024, num_variations=1)
-        print(f"Generated Lyrics for the title '{title}':")
-        post_processed_lyrics = post_process_lyrics(lyrics)
-        prettyPrintLyrics(post_processed_lyrics)
+        # lyrics = generate_lyrics_from_title(title, device, max_length=1024, num_variations=1)
+        print(getPerplexityFromPretrained())
+        # print(f"Generated Lyrics for the title '{title}':")
+        # post_processed_lyrics = post_process_lyrics(lyrics)
+        # prettyPrintLyrics(post_processed_lyrics)
         
