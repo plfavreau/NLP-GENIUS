@@ -1,4 +1,19 @@
-# NLP-GENIUS
+# NLP-GENIUS 🎵 ✨
+
+NLP-GENIUS is a cutting-edge natural language processing project that combines the power of transformers and machine learning to create an innovative music technology suite. It features:
+
+### 🎹 Title to Lyrics Generator (Transformer)
+Transform any title into complete song lyrics using a fine-tuned GPT-2 model trained on over 1M songs. The model captures musical patterns and lyrical structures to generate coherent and creative lyrics that match the input title's theme.
+
+### 🎯 Genre Classifier
+An advanced machine learning classifier that can predict a song's genre based on its lyrics. Using a combination of logistic regression and naive Bayes algorithms, it achieves impressive accuracy in categorizing songs into different musical styles.
+
+### 🔬 Key Technical Features
+- Fine-tuned GPT-2 transformer model for lyric generation
+- Sophisticated text preprocessing pipeline
+- Multi-model ensemble classification
+- Docker containerization for easy deployment
+- Comprehensive evaluation metrics and benchmarking
 
 ## Title to Lyrics Transformer
 
